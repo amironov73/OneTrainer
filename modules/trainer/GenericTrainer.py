@@ -460,6 +460,7 @@ class GenericTrainer(BaseTrainer):
 
         lr_scheduler = None
         accumulated_loss = 0.0
+        epoch_loss = 0.0 # for logging purposes only, not used in training
         ema_loss = None
         for epoch in tqdm(range(train_progress.epoch, self.config.epochs, 1), desc="epoch"):
             self.callbacks.on_update_status("starting epoch/caching")
@@ -555,6 +556,7 @@ class GenericTrainer(BaseTrainer):
                         'smooth loss': ema_loss,
                     })
                     self.tensorboard.add_scalar("loss/smooth loss", ema_loss, train_progress.global_step)
+                    epoch_loss += accumulated_loss
                     accumulated_loss = 0.0
 
                     self.model_setup.after_optimizer_step(self.model, self.config, train_progress)
@@ -577,6 +579,11 @@ class GenericTrainer(BaseTrainer):
 
                 if self.commands.get_stop_command():
                     return
+
+            if current_epoch_length:
+                epoch_loss /= current_epoch_length  # for logging purposes only, not used in training
+            self.tensorboard.add_scalar("loss/epoch_loss", epoch_loss, train_progress.epoch)
+            epoch_loss = 0.0
 
             train_progress.next_epoch()
             self.callbacks.on_update_train_progress(train_progress, current_epoch_length, self.config.epochs)
@@ -604,5 +611,7 @@ class GenericTrainer(BaseTrainer):
 
         self.tensorboard.close()
 
-        if self.config.tensorboard:
-            self.tensorboard_subprocess.kill()
+        # Don't kill the tensorboard process
+        # As we need it to be running in the background
+        # if self.config.tensorboard:
+        #    self.tensorboard_subprocess.kill()

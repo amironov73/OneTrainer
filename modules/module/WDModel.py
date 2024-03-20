@@ -70,4 +70,7 @@ class WDModel(BaseImageCaptionModel):
             in sorted_general_labels
         ])
 
+        if initial_caption:
+            predicted_caption = initial_caption + ", " + predicted_caption
+
         return predicted_caption

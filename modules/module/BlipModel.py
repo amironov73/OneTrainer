@@ -26,7 +26,10 @@ class BlipModel(BaseImageCaptionModel):
         inputs = self.processor(caption_sample.get_image(), initial_caption, return_tensors="pt")
         inputs = inputs.to(self.device, self.dtype)
         with torch.no_grad():
-            outputs = self.model.generate(**inputs)
+            outputs = self.model.generate(**inputs, max_new_tokens=250)
         predicted_caption = self.processor.decode(outputs[0], skip_special_tokens=True)
+
+        if initial_caption:
+            predicted_caption = initial_caption + ", " + predicted_caption
 
         return predicted_caption
